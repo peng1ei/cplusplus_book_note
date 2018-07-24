@@ -1,0 +1,275 @@
+## 第 1 章 C++ Classes的语法和语义
+### 开宗明义：Classes与Objects
+
+1. object
+object 是一个实体（instance），由数据结构以及用以处理该结构的 methods 组成。object 在会占用一定的内存空间。
+classes 是由某个 template 所产生出的实体的集合， 此处的 template 与 C++语法中的 template 不同, classes 只是一种“属性的描述”, 
+		并不是实体，根据 class 产生出来的 object 才是实体。
+ - 封装，encapsulation
+ - 继承，inheritance
+ - 多态，(*)
+内建的 char int float double 等也属于 class。
+
+### Classes 的 Declaration 与 Implememtation
+--------------------------------------------------------
+class CPoint {
+	public:
+		// ......
+};
+--------------------------------------------------------
+C++ Primer的作者将上述称作 class declaration.
+The C++ Programming Language的作者将上述称作 class definition.
+
+C++ Primer的作者将函数的实现称作 function implementation.
+The C++ Programming Language的作者将函数的实现称作 function definition.
+
+在内存中分配空间的称之为 definition.
+
+### 函数重载（Function Overload）
+函数重载，就是多个函数的函数名相同，但是其形参的个数或者类型至少有一个不一样，则这些函数就构成重载。
+重载的适用场景：1）class member function。2）global function。
+
+--------------------------------------------------------
+void func();
+float func();
+--------------------------------------------------------
+注意以上情况：函数名相同，形参个数和类型也相同，但是返回类型不一样，这样的两个函数不构成重载，编译器会报错误。
+
+### 运算符重载（Operator Overload)
+所谓的 运算符(operators) 就是：+ - * / >> << 等之类的符号，代表一种动作。
+面对 operators，我们应该想象它是一种函数，只不过形式比较特殊罢了。函数的参数一般出现在括弧()之中，而 operator 的参数
+则围绕着一个 operator 符号(之前或之后)。
+C++ 允许程序员为 class type's objects 设计专属的 operators，使 objects 的操作能够像内建类型一样自然而直接。让 operator 以多种风貌呈
+现，但符号不变，这就是 运算符重载。
+
+### extern "C"
+C++编译器为了支持重载这个特性（当然不仅仅只是因为这一项，还有其它的C++特性），使用了 符号改编(Name Mangling)或符号修饰 的机制。
+不同的C++编译器，其 Name Mangling 具体实现不一样，因此C++的二进制代码就无法在各个不同的编译器平台上使用。
+如果C++想要导出(export)某些东西给外界使用，Name Mangling 就会带来困扰。
+
+能够在C++程序中导出的东西，不外乎为 functions 和 classes（虽然 data member 导出也可以，但是一般不这么做）。Classes无论是否导出，不可
+避免的要被 Name Mangling。但是 functions 不一样，当我们企图导出 function，我们不希望它们被编译器施以 Name Mangling 机制，因为我们不希
+望这些 functions 的使用者被限制使用 "与 functions 设计者相同的开发工具"。因此, 对于将要导出的函数，为了抑制 Name Mangling 的作用，必须
+加上特殊的修饰词 extern "C"，例如：
+----------------------------------------------------------
+extern "C" int Add(int a, int b);
+----------------------------------------------------------
+
+通常，在动态库中的 functions 对 extern "C" 用的比较多。
+
+注意，不允许导出两个函数名相同的函数，否则会报错，因为对于C编译器，对函数名的修饰符仅仅只是在其函数名前加下划线，以下情况将报错：
+----------------------------------------------------------
+extern "C" int Add(int a, int b);
+extern "C" int Add(long a, long b);
+----------------------------------------------------------
+
+C 语言不支持 extern "c" 语法。C++编译器默认定义 __cplusplus 这个宏，在C++代码中使用 extern "C" 的技巧：
+----------------------------------------------------------
+// 如果当前编译单元是 C++ 代码，那么 memset 会在 extern "C"里面被声明
+// 如果是 C 代码，就直接声明。
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void *memset(void *, int, size_t);
+
+#ifdef __cplusplus
+}
+#endif
+----------------------------------------------------------
+
+### 三种封装层级：private protected public
+----------------------------------------------------------------
+	基类	|	继承方式	|	派生类	|		访问情况	   
+			|				|			| 基类 | 派生类 | 外部 
+----------------------------------------------------------------
+公有成员	|				|公有成员	| +	   | +      | +
+保护成员	|	公有继承	|保护成员   | +    | +      | - 
+私有成员    |               |无         | +    | -      | - 
+----------------------------------------------------------------
+公有成员	|				|保护成员	| +	   | +      | - 
+保护成员	|	保护继承	|保护成员   | +    | +      | - 
+私有成员    |               |无         | +    | -      | - 
+----------------------------------------------------------------
+公有成员	|				|私有成员	| +	   | +      | - 
+保护成员	|	私有继承	|私有成员   | +    | +      | - 
+私有成员    |               |无         | +    | -      | - 
+----------------------------------------------------------------
+
+在C++中，struct和class这两个关键字一般没什么区别，主要的区别就是 struct 的成员默认是public，而 class 的成员默认是 private。
+
+### Objects的诞生（Objects Instantiation）
+根据某个class，产生出一个object的动作称为 instantiation（具体化、实例化）。在object诞生的时候会自动调用某一个构造函数，在死亡
+的时候，会自动调用一个析构函数。
+- Constructor
+	default constructor：没有参数
+	copy constructor：只有一个参数，并且为该 class 的类型
+	构造函数可以有多个
+- Destructor
+	析构函数只能有一个
+
+### Objects 的生命（Scope of Objects）
+- local objects
+	位于 stack 之中；
+	它的生命随着 objects 的产生而开始，随着所在的函数的结束而结束；
+- global objects
+	位于 data segment 之中；
+	它的生命随着程序的开始而开始（比程序入口点还早），随着程序的结束而结束；
+- heap objects
+	位于 heap 之中；
+	它的生命随着 new operator 而展开，随着 delete operator 而结束。
+
+C++ 允许 delete 操作删除 空指针，但不允许删除野指针（已释放的区域或受保护的区域）。？？？
+
+### Pointer 和 References
+reference 必须被初始化为某个已存在的 object。
+T &ref <==> T *const ref; reference 可以被自动提取(dereference)。reference 本质上是一个 pointer。
+面对 reference，最简单的想象就是，把它幻想为一个形式漂亮的 pointer。这样的好处是我们不需要担心是是否被初始化（编译器会强迫做），
+也不需要担心如何提取（deference）它（编译器会负责）。
+reference 常被用于：1）函数的形参（arguments list）；2）返回值（return value）。
+reference 对于 copy constructor 设计十分重要。
+
+以面向对象为导向的程序设计中，我们希望 global 的东西越少越好。
+
+### 构造函数和析构函数（Constructors & Destructors）
+可参考 《深入理解C++对象模型》第2章和第5章
+1. 默认构造函数（Default Construsctors）
+没有任何参数的构造函数。
+
+如果一个 class 没有任何的 user-defined constructor，那么编译器可能会为此 classes 自动做出一个 default constructor。此一由编译器
+合成出来的 default constructor 只负责完成编译器所需的动作，无法照顾 user(programmer) 的可能需求（如使内置类型 int float 等数据成员初始化为 0）。
+什么是”编译器所需“的动作？--就是隐藏在程序语句下面，让C++诸多特性得以实现的动作。包括以下三种情况：
+1）class CA内含 class CZ objects。（这种情况称为 composition，即组合；CZ objects被称为 object members 或 embedded object）
+当你产生一个 CA object，隐藏在底层的必要动作是：先将 CZ objecs 初始化（因为 CA object 之中有一个 CZ object）。
+--------------------------------------------------------
+class CA {
+	private:
+		CZ czobj;
+};
+--------------------------------------------------------
+
+2）class CA 继承自 class CZ。
+当你产生一个 CA object，隐藏在底层的必要动作是：调用 CZ 的 default constuctor（因为 CA object 之中有一个 CZ subobject）。
+--------------------------------------------------------
+class CA : public CZ {
+
+};
+--------------------------------------------------------
+
+3）CA 是一个 polymorphic class，也就是说它拥有 virtual functions，或继承自拥有 virtual functions 的class(es)。
+当你产生一个 CA object，隐藏在底层的必要动作是：将虚拟机制所需要的 vptr 和 vtbl 初始化。
+
+由于这三种情况皆有所谓的”底层的必要动作“，所以编译器必须自动为 class CA 合成一个 default constructor（如果没有任何 user-defined constructor的话），
+或暗中对已有的 user-define constructors 动手脚（添加一些代码）。合成出来的东西为 implicit nontrivial default constructor。
+（如果 class 不属于上述的三种情况，则编译器为没有定义任何构造的函数的 class 合成出来的默认构造函数称为 implicit trivial default constructor,
+	这个 trivial(什么事也没做)的函数其实并不存在。）
+
+如果没有上述需求，编译器就不会为 class 产生一个 default constructor。
+如果 class 已经有了任何 costructor ，但非 default constructor，编译器绝对不会为它合成一个 default constructor。
+
+2. 拷贝构造函数（Copy Constructors）
+所谓的 copy constructor，是只那种”只有一个参数，且其参数类型为 class type”的constructor。
+以下两种情况，会调用 copy constructor：
+1）将一个 object 当做 参数 传递给一个函数。
+2）将一个 object 当做 函数的返回值。
+
+编译器只有在必要的时候，才会为我们自动做出一个 copy constructor。(什么时候才算必要的时候？）
+当classes的设计引入了虚拟机制（如果class内含virtual functions，或如果class继承关系中出现虚拟继承，那么就有所谓的虚拟机制），引进了
+一个额外的 data member：vptr。
+
+### Class Members
+class 的成员：
+- Data members
+	通常声明为 private 或 protected；
+	表示根据这个class所产生的 object(实体) 里头会有写什么东西，它事实上也是占据 object 内存空间的唯一物质（除非引入虚拟机制）。
+- Member functions
+	通常设计为 public。
+
+composition（组合）：data member 是一个 class object（不是指针）；这样的 objects 被称为 embedded objects 或 object member。
+composition 被用来描述 "has a" 的关系，例如汽车”有一个“引擎。
+inheritance(继承) 被用来描述 "is a kind of" 的关系，例如汽车”是一种“交通工具。
+
+member functions 不占用 objects 的内存空间，它被编译器处理后，以完全等同于一般的 global functions 的身份出现，独立于任何 object 之外。
+同一份函数代码如何能够处理根据同一个 class 产生出来的不同的 objects 的 data members呢？
+关键在于有一个 this 指针隐藏在 member functions 的参数列之中，也隐藏在 member functions 函数代码对 data members 的处理动作上，是编译器
+为我们加上去的。
+
+CPoint::foo(); CPoint::ratio = 0.2; 这种方式用于访问 class 的 static members。
+::functions(); 这种方式用来访问 global functions。
+
+#### Static Members（静态成员）
+静态的意思是，这份 members 属于 class 而非 objects 所有。class 只是属性，object 才是实体。
+static data members 类似于 global variables，static member functions 类似于 global functions。
+在面向对象程序设计中，global 的东西越少越好。
+
+static data members 属于 class，所有 objects 共享，独立于 object 之外。
+访问 static data members的方法：
+- SavingAccount::rate = 0.0072; 通过 class 访问，在 g++ 中，此时也需要 static data members 为 public，外界才能访问，否则会报访问权限不足相关错误。
+- SavingAccount obj; obj.rate = 0.0073; 通过 object 访问，此时，需要 static data members 具有 public 访问权限，如果在 protected和private 下则不行。
+
+static member functions 也可以直接通过 class 或 object 进行调用，同样需要 static member functions 具有相关的访问权限；static member functions 只能操作
+static data members，而不能操作 non-static data members，因为 static member functions 没有默认的 this 指针。
+
+static data members 和 static member functions 通过 class 访问时，就相当于是访问 global 的变量和函数一样，需要他们有 public 权限，在g++中是这样；
+当它们通过具体的 objects 访问时，就类似于访问他们的 member functions，此时需要它们具有 public 的权限，如果为 protected或pivate 就会报错。
+
+static data member 一般在 class 中声明，然后在 .cpp 文件里定义并设初值。
+
+### 继承（Inheritance）
+derived class 把 base class 的所有内容（包括 data members 和 member functions）统统被继承下来（有无存取资格则是另一回事）。
+C++ 中的三种继承：
+- 单一继承：direct base class 只有一个
+- 多重继承：direct base class 不止一个
+- 虚拟继承：多重继承之下，让共同的”祖父级“base class object 能够被共享，不至于浪费空间。
+
+虚拟继承的方式，在 public 后加关键字 virtual，总所周知的 iostream library 就是基于虚拟继承的：
+-----------------------------------------------------------------
+class ios { ... };
+class istream : public virtual ios { ... }; // 含有 virtual 关键字
+class ostream : public virtual ios { ... }; // 含有 virtual 关键字
+class iostream : public istream, public ostream { ... };
+-----------------------------------------------------------------
+
+无虚拟继承时（在 iostram 中就会有两份 ios）：
+		ios				ios
+		 |				 |
+	  istream         ostream
+	     |				 |
+		 -----------------
+		 		 |
+			 iostream
+
+有虚拟继承时（在 iostream 中就只有一份 ios）：
+				ios
+		 		 |
+		 -----------------
+		 |				 |
+	  istream         ostream
+	     |				 |
+		 -----------------
+		 		 |
+			 iostream
+	
+继承关系下的对象构建：有内而外，由上而下；即构造函数先从基类的构造函数调起，再调用派生类的构造函数。
+继承关系下的对象析构：由外而内，由下而上；即析构函数先从派生类的析构函数调起，然后再调用基类的析构函数。
+
+Initialization List（初始化列表）：在进入构造函数的函数体之前，先调用初始化列表中所列的各函数式。
+当编译器根据继承关系往上一层调用 bass class constructor 时，如果上一层 有多个构造函数，则编译器不知道该调用哪一个，此时通过初始化列表明确
+指定一个构造函数来初始化，这就是初始化化列表最明显的存在价值。
+
+如果 member class 有一个以上的 constructors，那么内含 embedded object 的那么class就必须在其 constructor 中指定 initialzation list，否则就会出现
+”ambiguous call to oberladed function"的编译错误。
+
+编译器安插在 constructor 中的 members 宣告动作是以 members 在 class 中的声明次序为根据，而不是以 initialzation list中的排序次序为根据。
+即初始化列表的初始化顺序是按照各个成员变量在类中的声明次序为依据进行初始化的，即使各成员变量在初始化的顺序和声明的次序不一样，也会安装在类中的声明次序去初始化。
+
+#### 虚函数
+override（改写）：derived class 重新定义 virtual functions（而不再沿用 bass class 的定义），这个动作称为 override。
+
+#### inline function
+如果在 class 中实现函数的定义，则该函数自动称为 inline function。
+一般将 inline function 的定义实现在与 class 定义同在的 .h 文件中。
+编译器只是尽可能的为我们实现 inline，但是并不是说有 inline 关键字的函数就一定能称为 inline functions。
+virtual functions 绝不可能是 inline 函数，即使其定义就在 class 中。
+
